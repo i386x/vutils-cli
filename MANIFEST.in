@@ -12,6 +12,8 @@ include LICENSE
 include *.md
 include pyproject.toml
 include tox.ini
+recursive-include src *.pyi
+recursive-include src py.typed
 graft tests
 
 global-exclude *.py[cod]

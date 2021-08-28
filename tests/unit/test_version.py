@@ -6,7 +6,7 @@
 #
 # SPDX-License-Identifier: MIT
 #
-"""Test version module."""
+"""Test `vutils.cli.version` module."""
 
 import unittest
 

@@ -6,6 +6,6 @@
 #
 # SPDX-License-Identifier: MIT
 #
-"""Holds vutils.cli version."""
+"""Holds `vutils.cli` version."""
 
 __version__: str = "0.0.0"

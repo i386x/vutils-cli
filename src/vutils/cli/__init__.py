@@ -6,4 +6,4 @@
 #
 # SPDX-License-Identifier: MIT
 #
-"""vutils.cli package."""
+"""`vutils.cli` package."""
