@@ -8,7 +8,8 @@
 #
 
 import pathlib
-from typing import Callable, NoReturn, Protocol, TextIO
+from collections.abc import Callable
+from typing import NoReturn, Protocol, TextIO
 
 from typing_extensions import TypeAlias
 
