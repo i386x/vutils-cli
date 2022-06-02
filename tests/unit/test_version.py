@@ -8,13 +8,15 @@
 #
 """Test `vutils.cli.version` module."""
 
-import unittest
+from vutils.testing.testcase import TestCase
 
 from vutils.cli.version import __version__
 
 
-class VersionTestCase(unittest.TestCase):
+class VersionTestCase(TestCase):
     """Test case for version."""
+
+    __slots__ = ()
 
     def test_version(self):
         """Test if version is defined properly."""
