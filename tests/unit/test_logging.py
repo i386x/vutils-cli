@@ -9,7 +9,7 @@
 """Test `vutils.cli.logging` module."""
 
 from vutils.testing.testcase import TestCase
-from vutils.testing.utils import LazyInstance, cover_typing
+from vutils.testing.utils import LazyInstance
 
 from vutils.cli.io import brown
 from vutils.cli.logging import LogFormatter
@@ -24,13 +24,10 @@ from .common import (
     CS_RESET_ALL,
     LOGFILE,
     MESSAGE,
-    SYMBOLS,
     UKEY,
     LoggerB,
     ModulePatcher,
 )
-
-cover_typing("vutils.cli.logging", SYMBOLS)
 
 
 class LogFormatterTestCase(TestCase):

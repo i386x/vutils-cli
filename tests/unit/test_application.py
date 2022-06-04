@@ -9,14 +9,12 @@
 """Test `vutils.cli.application` module."""
 
 from vutils.testing.testcase import TestCase
-from vutils.testing.utils import cover_typing
 
 from vutils.cli.application import ApplicationMixin
 
 from .common import (
     ERR_TEST,
     MESSAGE,
-    SYMBOLS,
     ApplicationA,
     ErrorA,
     ErrorB,
@@ -24,8 +22,6 @@ from .common import (
     on_error_log,
     on_exit_log,
 )
-
-cover_typing("vutils.cli.application", SYMBOLS)
 
 
 class ApplicationMixinTestCase(TestCase):
