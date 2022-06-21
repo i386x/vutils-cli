@@ -1,4 +1,4 @@
-#                                                         -*- coding: utf-8 -*-
+#
 # File:    ./src/vutils/cli/errors.py
 # Author:  Jiří Kučera <sanczes AT gmail.com>
 # Date:    2021-07-09 22:37:01 +0200
