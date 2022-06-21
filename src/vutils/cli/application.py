@@ -1,4 +1,4 @@
-#                                                         -*- coding: utf-8 -*-
+#
 # File:    ./src/vutils/cli/application.py
 # Author:  Jiří Kučera <sanczes AT gmail.com>
 # Date:    2021-07-07 02:34:26 +0200

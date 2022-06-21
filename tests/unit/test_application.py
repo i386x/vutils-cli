@@ -1,4 +1,4 @@
-#                                                         -*- coding: utf-8 -*-
+#
 # File:    ./tests/unit/test_application.py
 # Author:  Jiří Kučera <sanczes AT gmail.com>
 # Date:    2021-08-29 12:15:57 +0200

@@ -1,4 +1,4 @@
-#                                                         -*- coding: utf-8 -*-
+#
 # File:    ./src/vutils/cli/__init__.pyi
 # Author:  Jiří Kučera <sanczes AT gmail.com>
 # Date:    2022-02-17 19:49:22 +0100

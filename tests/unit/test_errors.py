@@ -1,4 +1,4 @@
-#                                                         -*- coding: utf-8 -*-
+#
 # File:    ./tests/unit/test_errors.py
 # Author:  Jiří Kučera <sanczes AT gmail.com>
 # Date:    2021-08-28 21:14:57 +0200

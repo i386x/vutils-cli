@@ -1,4 +1,4 @@
-#                                                         -*- coding: utf-8 -*-
+#
 # File:    ./src/vutils/cli/io.py
 # Author:  Jiří Kučera <sanczes AT gmail.com>
 # Date:    2021-07-11 16:17:41 +0200

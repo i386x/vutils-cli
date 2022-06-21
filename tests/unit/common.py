@@ -1,4 +1,4 @@
-#                                                         -*- coding: utf-8 -*-
+#
 # File:    ./tests/unit/common.py
 # Author:  Jiří Kučera <sanczes AT gmail.com>
 # Date:    2021-09-12 10:54:19 +0200

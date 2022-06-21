@@ -1,4 +1,4 @@
-#                                                         -*- coding: utf-8 -*-
+#
 # File:    ./src/vutils/cli/logging.py
 # Author:  Jiří Kučera <sanczes AT gmail.com>
 # Date:    2021-07-09 16:31:58 +0200
