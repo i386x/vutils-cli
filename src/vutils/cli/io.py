@@ -9,9 +9,12 @@
 """CLI input/output."""
 
 import sys
-from typing import TextIO
+from typing import TYPE_CHECKING, TextIO
 
 import colorama
+
+if TYPE_CHECKING:
+    from vutils.cli import StreamsProxyProtocolP
 
 
 def nocolor(text: str) -> str:
@@ -94,11 +97,11 @@ class StreamsProxyMixin:
     """
     I/O streams proxy mixin.
 
-    Mixin that provides interface to manipulating streams. Can be used with
-    `ApplicationMixin` and `LoggerMixin`.
+    Mixin that provides interface to manipulating streams. Should be used
+    together with `ApplicationMixin` and `LoggerMixin`.
     """
 
-    def __init__(self) -> None:
+    def __init__(self: "StreamsProxyProtocolP") -> None:
         """
         Initialize streams.
 
@@ -109,7 +112,7 @@ class StreamsProxyMixin:
         self.__errout: TextIO = sys.stderr
 
     def set_streams(
-        self,
+        self: "StreamsProxyProtocolP",
         ostream: "TextIO | None" = None,
         estream: "TextIO | None" = None,
     ) -> None:
@@ -127,7 +130,7 @@ class StreamsProxyMixin:
         if estream is not None:
             self.__errout = estream
 
-    def wout(self, text: str) -> None:
+    def wout(self: "StreamsProxyProtocolP", text: str) -> None:
         """
         Write *text* to the output stream.
 
@@ -135,7 +138,7 @@ class StreamsProxyMixin:
         """
         self.__output.write(text)
 
-    def werr(self, text: str) -> None:
+    def werr(self: "StreamsProxyProtocolP", text: str) -> None:
         """
         Write *text* to the error output stream.
 
