@@ -25,4 +25,5 @@ def test_typing_code_is_covered():
     modules.
     """
     cover_typing("vutils.cli.application", SYMBOLS)
+    cover_typing("vutils.cli.io", SYMBOLS)
     cover_typing("vutils.cli.logging", SYMBOLS)
