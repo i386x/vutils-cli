@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.1.2
+
+* Remove duplicities in type annotations
+* Fix `flake8` issues
+* Fix `pylint` execution
+
 ## 0.1.1
 
 * Remove deprecated `pylint` warnings from `pyproject.toml`
