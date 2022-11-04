@@ -15,7 +15,7 @@ from vutils.cli.io import blue, brown, red, yellow
 if TYPE_CHECKING:
     import pathlib
 
-    from vutils.cli import _ColorFuncType, _LoggerProtocol
+    from vutils.cli import ColorFuncType, LoggerProtocolP
 
 
 class LogFormatter:
@@ -30,14 +30,14 @@ class LogFormatter:
 
     def __init__(self) -> None:
         """Initialize the formatter."""
-        self.__colormap: "dict[str, _ColorFuncType]" = {}
+        self.__colormap: "dict[str, ColorFuncType]" = {}
         cls = type(self)
         self.set_style(cls.INFO, blue)
         self.set_style(cls.WARNING, yellow)
         self.set_style(cls.ERROR, red)
         self.set_style(cls.DEBUG, brown)
 
-    def set_style(self, name: str, color: "_ColorFuncType") -> None:
+    def set_style(self, name: str, color: "ColorFuncType") -> None:
         """
         Set the style for a given type of log messages.
 
@@ -67,7 +67,7 @@ class LogFormatter:
         """
         if nocolor:
             return msg
-        color: "_ColorFuncType | None" = self.__colormap.get(name, None)
+        color: "ColorFuncType | None" = self.__colormap.get(name, None)
         if color is None:
             return msg
         return color(msg)
@@ -87,11 +87,10 @@ class LoggerMixin:
     """
     Logging facility mixin.
 
-    Should be used together with `StreamsProxyMixin`, which provides
-    `StreamsProxyMixin.werr` method.
+    Should be used together with `ApplicationMixin` and `StreamsProxyMixin`.
     """
 
-    def __init__(self: "_LoggerProtocol") -> None:
+    def __init__(self: "LoggerProtocolP") -> None:
         """
         Initialize the logger.
 
@@ -104,7 +103,7 @@ class LoggerMixin:
         self.__dlevel: int = 0
 
     def set_logger_props(
-        self: "_LoggerProtocol",
+        self: "LoggerProtocolP",
         logpath: "pathlib.Path | None" = None,
         formatter: "LogFormatter | None" = None,
         vlevel: "int | None" = None,
@@ -130,7 +129,7 @@ class LoggerMixin:
             self.__dlevel = dlevel
 
     def set_log_style(
-        self: "_LoggerProtocol", name: str, color: "_ColorFuncType"
+        self: "LoggerProtocolP", name: str, color: "ColorFuncType"
     ) -> None:
         """
         Set the style of log messages.
@@ -144,7 +143,7 @@ class LoggerMixin:
         """
         self.__formatter.set_style(name, color)
 
-    def wlog(self: "_LoggerProtocol", msg: str) -> None:
+    def wlog(self: "LoggerProtocolP", msg: str) -> None:
         """
         Write the message to the log file.
 
@@ -159,7 +158,7 @@ class LoggerMixin:
             ) as log:
                 log.write(msg)
 
-    def linfo(self: "_LoggerProtocol", msg: str, vlevel: int = 1) -> None:
+    def linfo(self: "LoggerProtocolP", msg: str, vlevel: int = 1) -> None:
         """
         Issue the info message.
 
@@ -172,7 +171,7 @@ class LoggerMixin:
         if vlevel <= self.__vlevel:
             self.__do_log(LogFormatter.INFO, msg)
 
-    def lwarn(self: "_LoggerProtocol", msg: str) -> None:
+    def lwarn(self: "LoggerProtocolP", msg: str) -> None:
         """
         Issue the warning message.
 
@@ -180,7 +179,7 @@ class LoggerMixin:
         """
         self.__do_log(LogFormatter.WARNING, msg)
 
-    def lerror(self: "_LoggerProtocol", msg: str) -> None:
+    def lerror(self: "LoggerProtocolP", msg: str) -> None:
         """
         Issue the error message.
 
@@ -188,7 +187,7 @@ class LoggerMixin:
         """
         self.__do_log(LogFormatter.ERROR, msg)
 
-    def ldebug(self: "_LoggerProtocol", msg: str, dlevel: int = 1) -> None:
+    def ldebug(self: "LoggerProtocolP", msg: str, dlevel: int = 1) -> None:
         """
         Issue the debug message.
 
@@ -201,7 +200,7 @@ class LoggerMixin:
         if dlevel <= self.__dlevel:
             self.__do_log(LogFormatter.DEBUG, msg)
 
-    def __do_log(self: "_LoggerProtocol", name: str, msg: str) -> None:
+    def __do_log(self: "LoggerProtocolP", name: str, msg: str) -> None:
         """
         Write the message to both log file and error output stream.
 

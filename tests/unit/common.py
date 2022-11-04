@@ -18,12 +18,13 @@ from vutils.cli.io import StreamsProxyMixin
 from vutils.cli.logging import LoggerMixin
 
 SYMBOLS = (
-    "_ExcType",
-    "_ExitExcType",
-    "_ColorFuncType",
-    "_StreamsProtocol",
-    "_LoggerProtocol",
-    "_ApplicationProtocol",
+    "ExcType",
+    "ExitExcType",
+    "ColorFuncType",
+    "ApplicationProtocol",
+    "StreamsProxyProtocolP",
+    "LoggerProtocolP",
+    "ApplicationProtocolP",
 )
 
 LOGFILE = "log.txt"

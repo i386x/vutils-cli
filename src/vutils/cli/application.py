@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, NoReturn
 from vutils.cli.errors import AppExitError, ApplicationError
 
 if TYPE_CHECKING:
-    from vutils.cli import _ApplicationProtocol, _ExcType, _ExitExcType
+    from vutils.cli import ApplicationProtocolP, ExcType, ExitExcType
 
 
 class ApplicationMixin:
@@ -26,14 +26,14 @@ class ApplicationMixin:
 
     EXIT_SUCCESS: int = 0
     EXIT_FAILURE: int = 1
-    EXIT_EXCEPTION: "_ExitExcType" = AppExitError
+    EXIT_EXCEPTION: "ExitExcType" = AppExitError
 
-    def __init__(self: "_ApplicationProtocol") -> None:
+    def __init__(self: "ApplicationProtocolP") -> None:
         """Initialize the mixin."""
-        self.__elist: "list[_ExcType]" = []
+        self.__elist: "list[ExcType]" = []
         self.catch(ApplicationError)
 
-    def catch(self: "_ApplicationProtocol", exc: "_ExcType") -> None:
+    def catch(self: "ApplicationProtocolP", exc: "ExcType") -> None:
         """
         Register an exception to be caught.
 
@@ -47,7 +47,7 @@ class ApplicationMixin:
             self.__elist.append(exc)
 
     def error(
-        self: "_ApplicationProtocol", msg: str, ecode: int = 1
+        self: "ApplicationProtocolP", msg: str, ecode: int = 1
     ) -> NoReturn:
         """
         Issue an error and exit.
@@ -59,7 +59,7 @@ class ApplicationMixin:
         self.lerror(msg)
         self.exit(ecode)
 
-    def exit(self: "_ApplicationProtocol", ecode: int) -> NoReturn:
+    def exit(self: "ApplicationProtocolP", ecode: int) -> NoReturn:
         """
         Exit the application by raising `AppExitError`.
 
@@ -68,7 +68,7 @@ class ApplicationMixin:
         """
         raise type(self).EXIT_EXCEPTION(ecode)
 
-    def main(self: "_ApplicationProtocol", unused_argv: "list[str]") -> int:
+    def main(self: "ApplicationProtocolP", unused_argv: "list[str]") -> int:
         """
         Provide the application entry point.
 
@@ -77,7 +77,7 @@ class ApplicationMixin:
         """
         return type(self).EXIT_SUCCESS
 
-    def run(self: "_ApplicationProtocol", argv: "list[str]") -> int:
+    def run(self: "ApplicationProtocolP", argv: "list[str]") -> int:
         """
         Run the application.
 
@@ -98,7 +98,7 @@ class ApplicationMixin:
             ecode = self.on_error(exc)
         return ecode
 
-    def on_exit(self: "_ApplicationProtocol", ecode: int) -> None:
+    def on_exit(self: "ApplicationProtocolP", ecode: int) -> None:
         """
         Specify what to do on `exit`.
 
@@ -109,7 +109,7 @@ class ApplicationMixin:
         """
         self.linfo(f"Application exited with exit code {ecode}\n", 2)
 
-    def on_error(self: "_ApplicationProtocol", exc: Exception) -> int:
+    def on_error(self: "ApplicationProtocolP", exc: Exception) -> int:
         """
         Specify what to do on error.
 
@@ -123,7 +123,7 @@ class ApplicationMixin:
 
     @classmethod
     def start(
-        cls: "type[_ApplicationProtocol]", modname: str = "__main__"
+        cls: "type[ApplicationProtocolP]", modname: str = "__main__"
     ) -> None:
         """
         Start the application.
