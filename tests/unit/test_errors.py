@@ -6,7 +6,12 @@
 #
 # SPDX-License-Identifier: MIT
 #
-"""Test `vutils.cli.errors` module."""
+"""
+Test :mod:`vutils.cli.errors` module.
+
+.. |ApplicationError| replace:: :exc:`~vutils.cli.errors.ApplicationError`
+.. |AppExitError| replace:: :exc:`~vutils.cli.errors.AppExitError`
+"""
 
 from vutils.testing.testcase import TestCase
 
@@ -14,12 +19,12 @@ from vutils.cli.errors import AppExitError, ApplicationError
 
 
 class ApplicationErrorTestCase(TestCase):
-    """Test case for `ApplicationError`."""
+    """Test case for |ApplicationError|."""
 
     __slots__ = ()
 
     def test_application_error(self):
-        """Test the `ApplicationError` basic usage."""
+        """Test the |ApplicationError| basic usage."""
         with self.assertRaises(ApplicationError) as context_manager:
             raise ApplicationError()
         exception = context_manager.exception
@@ -30,22 +35,23 @@ class ApplicationErrorTestCase(TestCase):
 
 
 class AppExitErrorTestCase(TestCase):
-    """Test case for `AppExitError`."""
+    """Test case for |AppExitError|."""
 
     __slots__ = ()
 
     def test_app_exit_error(self):
-        """Test the `AppExitError` basic usage."""
+        """Test the |AppExitError| basic usage."""
         ecode = 2
         self.do_test(1)
         self.do_test(ecode, ecode)
 
     def do_test(self, value, *args):
         """
-        Do the `AppExitError` basic usage test.
+        Do the |AppExitError| basic usage test.
 
         :param value: The expected value of exit code
-        :param args: Arguments to be passed to the `AppExitError` constructor
+        :param args: Positional arguments to be passed to the |AppExitError|
+            constructor
         """
         with self.assertRaises(AppExitError) as context_manager:
             raise AppExitError(*args)

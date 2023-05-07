@@ -1,12 +1,40 @@
 #
-# File:    ./tests/unit/common.py
+# File:    ./tests/unit/utils.py
 # Author:  Jiří Kučera <sanczes AT gmail.com>
 # Date:    2021-09-12 10:54:19 +0200
 # Project: vutils-cli: Auxiliary library for writing CLI applications
 #
 # SPDX-License-Identifier: MIT
 #
-"""Shared test code and data."""
+"""
+Unit tests utilities.
+
+:const LOGFILE: The name of the log file
+:const ERR_TEST: The test error code
+:const MESSAGE: The test message
+:const UKEY: The *unknown* key
+:const CS_RESET_ALL: The reset all color style
+:const CS_BRIGHT: The bright color style
+:const CF_RESET: The reset foreground color style
+:const CF_RED: The red foreground color style
+:const CF_GREEN: The green foreground color style
+:const CF_YELLOW: The yellow/brown foreground color style
+:const CF_LIGHTYELLOW_EX: The yellow foreground color style
+:const CF_BLUE: The blue foreground color style
+
+.. |ApplicationMixin.on_exit| replace:: :meth:`ApplicationMixin.on_exit
+   <vutils.cli.application.ApplicationMixin.on_exit>`
+.. |ApplicationMixin.on_error| replace:: :meth:`ApplicationMixin.on_error
+   <vutils.cli.application.ApplicationMixin.on_error>`
+.. |LoggerMixin.linfo| replace:: :meth:`LoggerMixin.linfo
+   <vutils.cli.logging.LoggerMixin.linfo>`
+.. |LoggerMixin.lerror| replace:: :meth:`LoggerMixin.lerror
+   <vutils.cli.logging.LoggerMixin.lerror>`
+.. |ApplicationMixin.exit| replace:: :meth:`ApplicationMixin.exit
+   <vutils.cli.application.ApplicationMixin.exit>`
+.. |ApplicationMixin.error| replace:: :meth:`ApplicationMixin.error
+   <vutils.cli.application.ApplicationMixin.error>`
+"""
 
 import unittest.mock
 
@@ -16,16 +44,6 @@ from vutils.cli.application import ApplicationMixin
 from vutils.cli.errors import ApplicationError
 from vutils.cli.io import StreamsProxyMixin
 from vutils.cli.logging import LoggerMixin
-
-SYMBOLS = (
-    "ExcType",
-    "ExitExcType",
-    "ColorFuncType",
-    "ApplicationProtocol",
-    "StreamsProxyProtocolP",
-    "LoggerProtocolP",
-    "ApplicationProtocolP",
-)
 
 LOGFILE = "log.txt"
 ERR_TEST = 2
@@ -54,17 +72,17 @@ def make_io_mock():
 
 def on_exit_log(ecode):
     """
-    Make a log item issued by `ApplicationMixin.on_exit`.
+    Make a log item issued by |ApplicationMixin.on_exit|.
 
     :param ecode: The exit code
     :return: the log item
     """
-    return (f"Application exited with exit code {ecode}\n", 2)
+    return (f"Application exited with an exit code {ecode}\n", 2)
 
 
 def on_error_log(exc):
     """
-    Make a log item issued by `ApplicationMixin.on_error`.
+    Make a log item issued by |ApplicationMixin.on_error|.
 
     :param exc: The exception object
     :return: the log item
@@ -73,7 +91,17 @@ def on_error_log(exc):
 
 
 class ModulePatcher(PatcherFactory):
-    """Patcher for builtin, `sys` and `colorama` modules."""
+    """
+    Patcher for builtin, :mod:`sys` and :mod:`colorama` modules.
+
+    :ivar mock_open: The :func:`open` mock
+    :ivar sys_argv: The :data:`sys.argv` mock
+    :ivar sys_exit: The :func:`sys.exit` mock
+    :ivar sys_stdout: The :obj:`sys.stdout` mock
+    :ivar sys_stderr: The :obj:`sys.stderr` mock
+    :ivar colorama_style: The :obj:`colorama.Style` mock
+    :ivar colorama_fore: The :obj:`colorama.Fore` mock
+    """
 
     __slots__ = (
         "mock_open",
@@ -88,9 +116,9 @@ class ModulePatcher(PatcherFactory):
     @staticmethod
     def setup_colorama_style(style):
         """
-        Set up `colorama.Style` mock.
+        Set up :obj:`colorama.Style` mock.
 
-        :param style: The mock of `colorama.Style`.
+        :param style: The :obj:`colorama.Style` mock
         """
         style.RESET_ALL = CS_RESET_ALL
         style.BRIGHT = CS_BRIGHT
@@ -98,9 +126,9 @@ class ModulePatcher(PatcherFactory):
     @staticmethod
     def setup_colorama_fore(fore):
         """
-        Set up `colorama.Fore` mock.
+        Set up :obj:`colorama.Fore` mock.
 
-        :param fore: The mock of `colorama.Fore`
+        :param fore: The :obj:`colorama.Fore` mock
         """
         fore.RESET = CF_RESET
         fore.RED = CF_RED
@@ -159,7 +187,7 @@ class ErrorB(Exception):
         """
         Get the error representation.
 
-        :retutn: the error representation
+        :return: the error representation
         """
         return f"{type(self).__name__}()"
 
@@ -167,13 +195,17 @@ class ErrorB(Exception):
         """
         Get the error representation.
 
-        :retutn: the error representation
+        :return: the error representation
         """
         return repr(self)
 
 
 class LoggerA:
-    """Test logger mixin."""
+    """
+    Test logger mixin.
+
+    :ivar stream: The stream mock
+    """
 
     __slots__ = ("stream",)
 
@@ -183,17 +215,17 @@ class LoggerA:
 
     def linfo(self, *args):
         """
-        Implement dummy `LoggerMixin.linfo` that records its arguments.
+        Implement dummy |LoggerMixin.linfo| that records its arguments.
 
-        :param args: Arguments
+        :param args: Positional arguments
         """
         self.stream.append(args)
 
     def lerror(self, *args):
         """
-        Implement dummy `LoggerMixin.lerror` that records its arguments.
+        Implement dummy |LoggerMixin.lerror| that records its arguments.
 
-        :param args: Arguments
+        :param args: Positional arguments
         """
         self.stream.append(args)
 
@@ -210,13 +242,22 @@ class LoggerB(LoggerMixin, StreamsProxyMixin):
 
 
 class ApplicationA(ApplicationMixin, LoggerA):
-    """Test application."""
+    """
+    Test application.
+
+    :cvar CMD_EXIT: The exit command name
+    :cvar CMD_ERROR: The error command name
+    :cvar CMD_XERROR: The extra error command name
+    :cvar CMD_RAISE_A: The ``raise ErrorA`` command name
+    :cvar CMD_RAISE_B: The ``raise ErrorB`` command name
+    """
 
     CMD_EXIT = "test-exit"
     CMD_ERROR = "test-error"
     CMD_XERROR = "test-error-extra"
     CMD_RAISE_A = "test-raise-a"
     CMD_RAISE_B = "test-raise-b"
+
     __slots__ = ()
 
     def __init__(self):
@@ -226,25 +267,26 @@ class ApplicationA(ApplicationMixin, LoggerA):
 
     def main(self, argv):
         """
-        Provide application entry point.
+        Provide the application entry point.
 
         :param argv: The list of arguments
         :return: the exit code
-        :raises ErrorA: when 0th argument is set ot ``test-raise-a``
-        :raises ErrorB: when 0th argument is set ot ``test-raise-b``
+        :raises .ErrorA: when 0th argument is set to ``test-raise-a``
+        :raises .ErrorB: when 0th argument is set to ``test-raise-b``
 
         The application behaves like follows:
-        - with no argument return 0
-        - with unknown argument return 1
-        - with 0th argument set to ``test-exit`` calls `ApplicationMixin.exit`
-          with ``ERR_TEST``
-        - with 0th argument set to ``test-error`` calls
-          `ApplicationMixin.error`
-          with ``MESSAGE``
-        - with 0th argument set to ``test-error-extra`` calls
-          `ApplicationMixin.error` with ``MESSAGE`` and ``ERR_TEST``
-        - with 0th argument set to ``test-raise-a`` raises `ErrorA`
-        - with 0th argument set to ``test-raise-b`` raises `ErrorB`
+
+        * with no argument return 0
+        * with unknown argument return 1
+        * with 0th argument set to ``test-exit`` calls |ApplicationMixin.exit|
+          with :const:`.ERR_TEST`
+        * with 0th argument set to ``test-error`` calls
+          |ApplicationMixin.error| with :const:`.MESSAGE`
+        * with 0th argument set to ``test-error-extra`` calls
+          |ApplicationMixin.error| with :const:`.MESSAGE` and
+          :const:`.ERR_TEST`
+        * with 0th argument set to ``test-raise-a`` raises :exc:`.ErrorA`
+        * with 0th argument set to ``test-raise-b`` raises :exc:`.ErrorB`
         """
         cls = type(self)
 

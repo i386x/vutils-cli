@@ -10,9 +10,14 @@
 
 
 class ApplicationError(Exception):
-    """Base class for all application errors."""
+    """
+    Base class for all application errors.
 
-    DEFAULT_DETAIL: str = ""
+    :cvar DETAIL: The detail about the error
+    """
+
+    DETAIL: str = ""
+
     __slots__ = ()
 
     def __init__(self) -> None:
@@ -25,7 +30,7 @@ class ApplicationError(Exception):
 
         :return: the error detail
         """
-        return type(self).DEFAULT_DETAIL
+        return type(self).DETAIL
 
     def __repr__(self) -> str:
         """
@@ -37,7 +42,7 @@ class ApplicationError(Exception):
 
     def __str__(self) -> str:
         """
-        Get the error representation (`str` alias).
+        Get the error representation (:class:`str` alias).
 
         :return: the error representation
         """
@@ -45,7 +50,13 @@ class ApplicationError(Exception):
 
 
 class AppExitError(ApplicationError):
-    """Used to signal the exit."""
+    """
+    Used to signal the exit.
+
+    :ivar ecode: The exit code
+    """
+
+    ecode: int
 
     __slots__ = ("ecode",)
 
@@ -56,7 +67,7 @@ class AppExitError(ApplicationError):
         :param ecode: The exit code (default 1)
         """
         ApplicationError.__init__(self)
-        self.ecode: int = ecode
+        self.ecode = ecode
 
     def detail(self) -> str:
         """
@@ -65,3 +76,91 @@ class AppExitError(ApplicationError):
         :return: the error detail
         """
         return f"exit_code={self.ecode}"
+
+
+class UnknownCommandError(ApplicationError):
+    """
+    Raised when a command given on CLI is not known.
+
+    :ivar name: The command name
+    """
+
+    name: str
+
+    __slots__ = ("name",)
+
+    def __init__(self, name: str) -> None:
+        """
+        Initialize the error object.
+
+        :param name: The command name
+        """
+        ApplicationError.__init__(self)
+        self.name = name
+
+    def detail(self) -> str:
+        """
+        Get the error detail.
+
+        :return: the error detail
+        """
+        return f'name="{self.name}"'
+
+    def __str__(self) -> str:
+        """
+        Generate the error message.
+
+        :return: the error message
+        """
+        return f"Unknown (sub)command: {self.name}"
+
+
+class OptParseError(ApplicationError):
+    """
+    Raised when option parsing goes wrong.
+
+    :ivar reason: The reason of error
+    """
+
+    reason: str
+
+    __slots__ = ("reason",)
+
+    def __init__(self, reason: str) -> None:
+        """
+        Initialize the error object.
+
+        :param reason: The reason of error
+        """
+        ApplicationError.__init__(self)
+        self.reason = reason
+
+    def detail(self) -> str:
+        """
+        Get the error detail.
+
+        :return: the error detail
+        """
+        return f'reason="{self.reason}"'
+
+    def __str__(self) -> str:
+        """
+        Generate the error message.
+
+        :return: the error message
+        """
+        return self.reason
+
+
+class UnknownOptionError(OptParseError):
+    """Used for unknown option reporting."""
+
+    __slots__ = ()
+
+    def __init__(self, option: str) -> None:
+        """
+        Initialize the error object.
+
+        :param option: The option
+        """
+        OptParseError.__init__(self, f"Unknown option '{option}'")

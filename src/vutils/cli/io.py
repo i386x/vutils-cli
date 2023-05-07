@@ -9,12 +9,14 @@
 """CLI input/output."""
 
 import sys
-from typing import TYPE_CHECKING, TextIO
+from typing import TYPE_CHECKING
 
 import colorama
 
 if TYPE_CHECKING:
-    from vutils.cli import StreamsProxyProtocolP
+    from typing import TextIO
+
+    from vutils.cli import StreamsProxyMixinP
 
 
 def nocolor(text: str) -> str:
@@ -97,22 +99,29 @@ class StreamsProxyMixin:
     """
     I/O streams proxy mixin.
 
+    :ivar __output: The output stream
+    :ivar __errout: The error output stream
+
     Mixin that provides interface to manipulating streams. Should be used
-    together with `ApplicationMixin` and `LoggerMixin`.
+    together with :class:`~vutils.cli.application.ApplicationMixin` and
+    :class:`~vutils.cli.logging.LoggerMixin`.
     """
 
-    def __init__(self: "StreamsProxyProtocolP") -> None:
+    __output: "TextIO"
+    __errout: "TextIO"
+
+    def __init__(self: "StreamsProxyMixinP") -> None:
         """
         Initialize streams.
 
-        Default streams are `sys.stdout` for the output stream and `sys.stderr`
-        for the error output stream.
+        Default streams are :obj:`sys.stdout` for the output stream and
+        :obj:`sys.stderr` for the error output stream.
         """
-        self.__output: TextIO = sys.stdout
-        self.__errout: TextIO = sys.stderr
+        self.__output = sys.stdout
+        self.__errout = sys.stderr
 
     def set_streams(
-        self: "StreamsProxyProtocolP",
+        self: "StreamsProxyMixinP",
         ostream: "TextIO | None" = None,
         estream: "TextIO | None" = None,
     ) -> None:
@@ -122,25 +131,25 @@ class StreamsProxyMixin:
         :param ostream: The output stream
         :param estream: The error output stream
 
-        Output stream and error output stream is not set if *ostream* and
-        *estream* is `None`, respectively.
+        Output stream and error output stream is not set if :arg:`ostream` and
+        :arg:`estream` is :obj:`None`, respectively.
         """
         if ostream is not None:
             self.__output = ostream
         if estream is not None:
             self.__errout = estream
 
-    def wout(self: "StreamsProxyProtocolP", text: str) -> None:
+    def wout(self: "StreamsProxyMixinP", text: str) -> None:
         """
-        Write *text* to the output stream.
+        Write :arg:`text` to the output stream.
 
         :param text: The text
         """
         self.__output.write(text)
 
-    def werr(self: "StreamsProxyProtocolP", text: str) -> None:
+    def werr(self: "StreamsProxyMixinP", text: str) -> None:
         """
-        Write *text* to the error output stream.
+        Write :arg:`text` to the error output stream.
 
         :param text: The text
         """

@@ -15,23 +15,36 @@ from vutils.cli.io import blue, brown, red, yellow
 if TYPE_CHECKING:
     import pathlib
 
-    from vutils.cli import ColorFuncType, LoggerProtocolP
+    from vutils.cli import ColorFuncType, LoggerMixinP
 
 
 class LogFormatter:
-    """Define how to format log messages."""
+    """
+    Define how to format log messages.
+
+    :cvar INFO: The info message type
+    :cvar WARNING: The warning message type
+    :cvar ERROR: The error message type
+    :cvar DEBUG: The debug message type
+    :cvar FORMAT: The log item format
+
+    :ivar __colormap: The mapping between message types and their colors
+    """
 
     INFO: str = "info"
     WARNING: str = "warning"
     ERROR: str = "error"
     DEBUG: str = "debug"
     FORMAT: str = "{label}: {message}"
+
+    __colormap: "dict[str, ColorFuncType]"
+
     __slots__ = ("__colormap",)
 
     def __init__(self) -> None:
         """Initialize the formatter."""
-        self.__colormap: "dict[str, ColorFuncType]" = {}
-        cls = type(self)
+        self.__colormap = {}
+        cls: "type[LogFormatter]" = type(self)
         self.set_style(cls.INFO, blue)
         self.set_style(cls.WARNING, yellow)
         self.set_style(cls.ERROR, red)
@@ -45,10 +58,11 @@ class LogFormatter:
         :param color: The message color
 
         The supported types of log messages are:
-        - `~LogFormatter.INFO` for info messages
-        - `~LogFormatter.WARNING` for warning messages
-        - `~LogFormatter.ERROR` for error messages
-        - `~LogFormatter.DEBUG` for debug messages
+
+        * :attr:`~.LogFormatter.INFO` for info messages
+        * :attr:`~.LogFormatter.WARNING` for warning messages
+        * :attr:`~.LogFormatter.ERROR` for error messages
+        * :attr:`~.LogFormatter.DEBUG` for debug messages
         """
         self.__colormap[name] = color
 
@@ -58,12 +72,12 @@ class LogFormatter:
 
         :param name: The name of the message type
         :param msg: The message to be colorized
-        :param nocolor: The no color flag (default `False`)
+        :param nocolor: The no color flag (default :obj:`False`)
         :return: the colorized message
 
         The color of a given log message type is set by
-        `~LogFormatter.set_style`. When *nocolor* is `True`, the message is not
-        colorized.
+        :meth:`~.LogFormatter.set_style`. When :arg:`nocolor` is :obj:`True`,
+        the message is not colorized.
         """
         if nocolor:
             return msg
@@ -87,23 +101,35 @@ class LoggerMixin:
     """
     Logging facility mixin.
 
-    Should be used together with `ApplicationMixin` and `StreamsProxyMixin`.
+    :ivar __logpath: The path to the log file
+    :ivar __formatter: The log formatter
+    :ivar __vlevel: The verbosity level
+    :ivar __dlevel: The debug level
+
+    Should be used together with
+    :class:`~vutils.cli.application.ApplicationMixin` and
+    :class:`~vutils.cli.io.StreamsProxyMixin`.
     """
 
-    def __init__(self: "LoggerProtocolP") -> None:
+    __logpath: "pathlib.Path | None"
+    __formatter: LogFormatter
+    __vlevel: int
+    __dlevel: int
+
+    def __init__(self: "LoggerMixinP") -> None:
         """
         Initialize the logger.
 
-        The default formatter is an instance of `LogFormatter`, the default
-        verbosity level is 1, and the default debug level is 0.
+        The default formatter is an instance of :class:`.LogFormatter`, the
+        default verbosity level is 1, and the default debug level is 0.
         """
-        self.__logpath: "pathlib.Path | None" = None
-        self.__formatter: LogFormatter = LogFormatter()
-        self.__vlevel: int = 1
-        self.__dlevel: int = 0
+        self.__logpath = None
+        self.__formatter = LogFormatter()
+        self.__vlevel = 1
+        self.__dlevel = 0
 
     def set_logger_props(
-        self: "LoggerProtocolP",
+        self: "LoggerMixinP",
         logpath: "pathlib.Path | None" = None,
         formatter: "LogFormatter | None" = None,
         vlevel: "int | None" = None,
@@ -117,7 +143,7 @@ class LoggerMixin:
         :param vlevel: The verbosity level
         :param dlevel: The debug level
 
-        The property is set only if it is not `None`.
+        The property is set only if it is not :obj:`None`.
         """
         if logpath is not None:
             self.__logpath = logpath
@@ -129,7 +155,7 @@ class LoggerMixin:
             self.__dlevel = dlevel
 
     def set_log_style(
-        self: "LoggerProtocolP", name: str, color: "ColorFuncType"
+        self: "LoggerMixinP", name: str, color: "ColorFuncType"
     ) -> None:
         """
         Set the style of log messages.
@@ -137,13 +163,13 @@ class LoggerMixin:
         :param name: The name of the message type
         :param color: The message color
 
-        This method changes the formatter object set by
-        `~LoggerMixin.set_log_formatter`. Therefore, it is recommended to use
-        this method after `~LoggerMixin.set_log_formatter`.
+        This method changes the formatter object's state set by
+        :meth:`~.LoggerMixin.set_logger_props`. Therefore, it is recommended to
+        use this method after :meth:`~.LoggerMixin.set_logger_props`.
         """
         self.__formatter.set_style(name, color)
 
-    def wlog(self: "LoggerProtocolP", msg: str) -> None:
+    def wlog(self: "LoggerMixinP", msg: str) -> None:
         """
         Write the message to the log file.
 
@@ -158,7 +184,7 @@ class LoggerMixin:
             ) as log:
                 log.write(msg)
 
-    def linfo(self: "LoggerProtocolP", msg: str, vlevel: int = 1) -> None:
+    def linfo(self: "LoggerMixinP", msg: str, vlevel: int = 1) -> None:
         """
         Issue the info message.
 
@@ -166,12 +192,13 @@ class LoggerMixin:
         :param vlevel: The verbosity level (default 1)
 
         The message is issued when the verbosity level is less or equal to the
-        verbosity level treshold set by `set_verbosity_level` (default 1).
+        verbosity level treshold set by :meth:`~.LoggerMixin.set_logger_props`
+        (default 1).
         """
         if vlevel <= self.__vlevel:
             self.__do_log(LogFormatter.INFO, msg)
 
-    def lwarn(self: "LoggerProtocolP", msg: str) -> None:
+    def lwarn(self: "LoggerMixinP", msg: str) -> None:
         """
         Issue the warning message.
 
@@ -179,7 +206,7 @@ class LoggerMixin:
         """
         self.__do_log(LogFormatter.WARNING, msg)
 
-    def lerror(self: "LoggerProtocolP", msg: str) -> None:
+    def lerror(self: "LoggerMixinP", msg: str) -> None:
         """
         Issue the error message.
 
@@ -187,7 +214,7 @@ class LoggerMixin:
         """
         self.__do_log(LogFormatter.ERROR, msg)
 
-    def ldebug(self: "LoggerProtocolP", msg: str, dlevel: int = 1) -> None:
+    def ldebug(self: "LoggerMixinP", msg: str, dlevel: int = 1) -> None:
         """
         Issue the debug message.
 
@@ -195,14 +222,15 @@ class LoggerMixin:
         :param dlevel: The debug level (default 1)
 
         The message is issued when the debug level is less or equal to the
-        debug level treshold set by `set_debug_level` (default 0).
+        debug level treshold set by :meth:`~.LoggerMixin.set_logger_props`
+        (default 0).
         """
         if dlevel <= self.__dlevel:
             self.__do_log(LogFormatter.DEBUG, msg)
 
-    def __do_log(self: "LoggerProtocolP", name: str, msg: str) -> None:
+    def __do_log(self: "LoggerMixinP", name: str, msg: str) -> None:
         """
-        Write the message to both log file and error output stream.
+        Write the message to both the log file and the error output stream.
 
         :param name: The name of message type
         :param msg: The message

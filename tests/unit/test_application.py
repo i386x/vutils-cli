@@ -6,13 +6,20 @@
 #
 # SPDX-License-Identifier: MIT
 #
-"""Test `vutils.cli.application` module."""
+"""
+Test :mod:`vutils.cli.application` module.
+
+.. |ApplicationMixin| replace::
+   :class:`~vutils.cli.application.ApplicationMixin`
+.. |ApplicationMixin.start| replace:: :meth:`ApplicationMixin.start
+   <vutils.cli.application.ApplicationMixin.start>`
+"""
 
 from vutils.testing.testcase import TestCase
 
 from vutils.cli.application import ApplicationMixin
 
-from .common import (
+from .utils import (
     ERR_TEST,
     MESSAGE,
     ApplicationA,
@@ -25,12 +32,12 @@ from .common import (
 
 
 class ApplicationMixinTestCase(TestCase):
-    """Test case for `ApplicationMixin`."""
+    """Test case for |ApplicationMixin|."""
 
     __slots__ = ()
 
     def test_application_start(self):
-        """Test `ApplicationMixin.start`."""
+        """Test |ApplicationMixin.start|."""
         patcher = ModulePatcher()
 
         with patcher.patch():
@@ -44,7 +51,7 @@ class ApplicationMixinTestCase(TestCase):
         self.assert_not_called(patcher.sys_exit)
 
     def test_error_management(self):
-        """Test `ApplicationMixin` error management."""
+        """Test |ApplicationMixin| error management."""
         app = ApplicationA()
 
         result = app.run([ApplicationA.CMD_EXIT])

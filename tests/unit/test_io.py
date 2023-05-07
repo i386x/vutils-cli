@@ -6,7 +6,11 @@
 #
 # SPDX-License-Identifier: MIT
 #
-"""Test `vutils.cli.io` module."""
+"""
+Test :mod:`vutils.cli.io` module.
+
+.. |StreamsProxyMixin| replace:: :class:`~vutils.cli.io.StreamsProxyMixin`
+"""
 
 from vutils.testing.testcase import TestCase
 from vutils.testing.utils import LazyInstance
@@ -21,7 +25,7 @@ from vutils.cli.io import (
     yellow,
 )
 
-from .common import (
+from .utils import (
     CF_BLUE,
     CF_GREEN,
     CF_LIGHTYELLOW_EX,
@@ -37,7 +41,11 @@ from .common import (
 
 
 class ColorOutputTestCase(TestCase):
-    """Test case for color output."""
+    """
+    Test case for color output.
+
+    :ivar patcher: The module patcher
+    """
 
     __slots__ = ("patcher",)
 
@@ -46,7 +54,7 @@ class ColorOutputTestCase(TestCase):
         self.patcher = ModulePatcher()
 
     def test_output_coloring(self):
-        """Test the output coloring functions."""
+        """Test the output of coloring functions."""
         self.do_test(nocolor, MESSAGE, MESSAGE)
         self.do_test(
             red, MESSAGE, f"{CS_BRIGHT}{CF_RED}{MESSAGE}{CS_RESET_ALL}"
@@ -79,7 +87,12 @@ class ColorOutputTestCase(TestCase):
 
 
 class StreamsProxyMixinTestCase(TestCase):
-    """Test case for `StreamsProxyMixin`."""
+    """
+    Test case for |StreamsProxyMixin|.
+
+    :ivar patcher: The module patcher
+    :ivar proxy: The proxy of |StreamsProxyMixin| instance
+    """
 
     __slots__ = ("patcher", "proxy")
 
@@ -89,7 +102,7 @@ class StreamsProxyMixinTestCase(TestCase):
         self.proxy = LazyInstance(StreamsProxyMixin, True).create()
 
     def test_default_streams(self):
-        """Test `StreamsProxyMixin` with default streams."""
+        """Test |StreamsProxyMixin| with default streams."""
         with self.patcher.patch():
             self.proxy.wout(MESSAGE)
             self.proxy.werr(MESSAGE)

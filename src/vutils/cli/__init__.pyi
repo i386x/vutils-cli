@@ -8,18 +8,27 @@
 #
 
 import pathlib
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import NoReturn, Protocol, TextIO
 
 from typing_extensions import TypeAlias
 
 from vutils.cli.errors import AppExitError
 from vutils.cli.logging import LogFormatter
+from vutils.cli.optparse import Option, OptionParser, State
 
 ExcType: TypeAlias = type[Exception]
 
 ExitExcType: TypeAlias = type[AppExitError]
 ColorFuncType: TypeAlias = Callable[[str], str]
+MainFuncType: TypeAlias = Callable[[list[str]], int]
+
+OptSpecTypeI: TypeAlias = Option | Iterable[Option]
+OptSpecTypeII: TypeAlias = Option | Iterable[OptSpecTypeI]
+OptSpecType: TypeAlias = Option | Iterable[OptSpecTypeII]
+
+class BuildParserFuncType(Protocol):
+    def __call__(self, *optspec: OptSpecType) -> OptionParser: ...
 
 class ApplicationProtocol(Protocol):
     EXIT_SUCCESS: int
@@ -31,8 +40,11 @@ class ApplicationProtocol(Protocol):
     def exit(self, ecode: int) -> NoReturn: ...
     def main(self, argv: list[str]) -> int: ...
     def run(self, argv: list[str]) -> int: ...
+    def epcall(self, epfunc: MainFuncType, argv: list[str]) -> int: ...
     def on_exit(self, ecode: int) -> None: ...
     def on_error(self, exc: Exception) -> int: ...
+    @classmethod
+    def start(cls, modname: str) -> None: ...
 
     # StreamsProxyMixin interface:
     def set_streams(
@@ -56,11 +68,14 @@ class ApplicationProtocol(Protocol):
     def lerror(self, msg: str) -> None: ...
     def ldebug(self, msg: str, dlevel: int) -> None: ...
 
-class StreamsProxyProtocolP(Protocol, ApplicationProtocol):
+class ApplicationMixinP(Protocol, ApplicationProtocol):
+    __elist: list[ExcType]
+
+class StreamsProxyMixinP(Protocol, ApplicationProtocol):
     __output: TextIO
     __errout: TextIO
 
-class LoggerProtocolP(Protocol, ApplicationProtocol):
+class LoggerMixinP(Protocol, ApplicationProtocol):
     __logpath: pathlib.Path | None
     __formatter: LogFormatter
     __vlevel: int
@@ -68,5 +83,21 @@ class LoggerProtocolP(Protocol, ApplicationProtocol):
 
     def __do_log(self, name: str, msg: str) -> None: ...
 
-class ApplicationProtocolP(Protocol, ApplicationProtocol):
-    __elist: list[ExcType]
+class CommandProtocol(Protocol, ApplicationMixinP):
+    OPTSPEC: Iterable[OptSpecType]
+    STATE_CLS: type[State]
+    BUILD_PARSER_FUNC: BuildParserFuncType
+
+    parent: CommandProtocol | None
+    opts: dict[str, object]
+
+    def set_opts_defaults(self, parser: OptionParser | None) -> None: ...
+    def set_optval(self, name: str, value: object) -> None: ...
+    def get_optval(self, name: str, default: object) -> object: ...
+    def initialize(self) -> None: ...
+    def print_help(self) -> None: ...
+    def print_version(self) -> None: ...
+    def parse_args(self, argv: list[str]) -> State: ...
+    def load_subcommand(self, name: str) -> CommandProtocol: ...
+    def get_subcommand(self) -> CommandProtocol | None: ...
+    def run(self, argv: list[str]) -> int: ...

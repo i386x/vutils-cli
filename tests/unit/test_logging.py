@@ -6,7 +6,16 @@
 #
 # SPDX-License-Identifier: MIT
 #
-"""Test `vutils.cli.logging` module."""
+"""
+Test :mod:`vutils.cli.logging` module.
+
+.. |LogFormatter| replace:: :class:`~vutils.cli.logging.LogFormatter`
+.. |LogFormatter.colorize| replace:: :meth:`LogFormatter.colorize
+   <vutils.cli.logging.LogFormatter.colorize>`
+.. |LoggerMixin| replace:: :class:`~vutils.cli.logging.LoggerMixin`
+.. |LoggerMixin.set_log_style| replace:: :meth:`LoggerMixin.set_log_style
+   <vutils.cli.logging.LoggerMixin.set_log_style>`
+"""
 
 from vutils.testing.testcase import TestCase
 from vutils.testing.utils import LazyInstance
@@ -14,7 +23,7 @@ from vutils.testing.utils import LazyInstance
 from vutils.cli.io import brown
 from vutils.cli.logging import LogFormatter
 
-from .common import (
+from .utils import (
     CF_BLUE,
     CF_LIGHTYELLOW_EX,
     CF_RED,
@@ -31,7 +40,11 @@ from .common import (
 
 
 class LogFormatterTestCase(TestCase):
-    """Test case for `LogFormatter`."""
+    """
+    Test case for |LogFormatter|.
+
+    :ivar patcher: The module patcher
+    """
 
     __slots__ = ("patcher",)
 
@@ -78,9 +91,11 @@ class LogFormatterTestCase(TestCase):
 
     def do_colorize(self, formatter, *args):
         """
-        Call `LogFormatter.colorize` within the patched context.
+        Call |LogFormatter.colorize| within the patched context.
 
-        :param args: Arguments to be passed to `LogFormatter.colorize`
+        :param formatter: The log formatter
+        :param args: Positional arguments to be passed to
+            |LogFormatter.colorize|
         :return: the colorized text
         """
         with self.patcher.patch():
@@ -88,7 +103,15 @@ class LogFormatterTestCase(TestCase):
 
 
 class LoggerMixinTestCase(TestCase):
-    """Test case for `LoggerMixin`."""
+    """
+    Test case for |LoggerMixin|.
+
+    :cvar COLOR_START: The message style to color start code mapping
+    :cvar COLOR_END: The message style to color end code mapping
+
+    :ivar patcher: The module patcher
+    :ivar logger: The proxy of |LoggerMixin| instance
+    """
 
     COLOR_START = {
         LogFormatter.INFO: f"{CS_BRIGHT}{CF_BLUE}",
@@ -102,6 +125,7 @@ class LoggerMixinTestCase(TestCase):
         LogFormatter.ERROR: CS_RESET_ALL,
         LogFormatter.DEBUG: CF_RESET,
     }
+
     __slots__ = ("patcher", "logger")
 
     def setUp(self):
@@ -110,7 +134,7 @@ class LoggerMixinTestCase(TestCase):
         self.logger = LazyInstance(LoggerB, True).create()
 
     def test_set_log_style(self):
-        """Test `LoggerMixin.set_log_style` method."""
+        """Test |LoggerMixin.set_log_style| method."""
         with self.patcher.patch():
             self.logger.set_log_style(LogFormatter.INFO, brown)
             self.logger.linfo(MESSAGE)
@@ -224,7 +248,7 @@ class LoggerMixinTestCase(TestCase):
 
     def verify_logged(self, name):
         """
-        Verify `MESSAGE` is logged.
+        Verify :const:`~.utils.MESSAGE` is logged.
 
         :param name: The name of the message type
         :raises AssertionError: when verification fails
@@ -239,7 +263,7 @@ class LoggerMixinTestCase(TestCase):
 
     def verify_not_logged(self):
         """
-        Verify `MESSAGE` is not logged.
+        Verify :const:`~.utils.MESSAGE` is not logged.
 
         :raises AssertionError: when verification fails
         """
