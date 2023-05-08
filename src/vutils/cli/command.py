@@ -22,6 +22,7 @@ from vutils.cli.optparse import OptionSet, PosArg, State, build_parser
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+    from typing import ClassVar
 
     from vutils.cli import BuildParserFuncType, CommandProtocol, OptSpecType
     from vutils.cli.optparse import Option, OptionParser
@@ -47,9 +48,9 @@ class CommandMixin(ApplicationMixin):
     depending on the actual context.
     """
 
-    OPTSPEC: "Iterable[OptSpecType]" = ()
-    STATE_CLS: "type[State]" = State
-    BUILD_PARSER_FUNC: "BuildParserFuncType" = build_parser
+    OPTSPEC: "ClassVar[Iterable[OptSpecType]]" = ()
+    STATE_CLS: "ClassVar[type[State]]" = State
+    BUILD_PARSER_FUNC: "ClassVar[BuildParserFuncType]" = build_parser
 
     parent: "CommandProtocol | None"
     opts: "dict[str, object]"

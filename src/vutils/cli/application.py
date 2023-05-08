@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 from vutils.cli.errors import AppExitError, ApplicationError
 
 if TYPE_CHECKING:
-    from typing import NoReturn
+    from typing import ClassVar, NoReturn
 
     from vutils.cli import (
         ApplicationMixinP,
@@ -40,9 +40,9 @@ class ApplicationMixin:
     :class:`~vutils.cli.io.StreamsProxyMixin`.
     """
 
-    EXIT_SUCCESS: int = 0
-    EXIT_FAILURE: int = 1
-    EXIT_EXCEPTION: "ExitExcType" = AppExitError
+    EXIT_SUCCESS: "ClassVar[int]" = 0
+    EXIT_FAILURE: "ClassVar[int]" = 1
+    EXIT_EXCEPTION: "ClassVar[ExitExcType]" = AppExitError
 
     __elist: "list[ExcType]"
 

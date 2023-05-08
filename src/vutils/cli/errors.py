@@ -8,6 +8,11 @@
 #
 """Definitions of errors."""
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from typing import ClassVar
+
 
 class ApplicationError(Exception):
     """
@@ -16,7 +21,7 @@ class ApplicationError(Exception):
     :cvar DETAIL: The detail about the error
     """
 
-    DETAIL: str = ""
+    DETAIL: "ClassVar[str]" = ""
 
     __slots__ = ()
 

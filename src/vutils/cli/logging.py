@@ -14,6 +14,7 @@ from vutils.cli.io import blue, brown, red, yellow
 
 if TYPE_CHECKING:
     import pathlib
+    from typing import ClassVar
 
     from vutils.cli import ColorFuncType, LoggerMixinP
 
@@ -31,11 +32,11 @@ class LogFormatter:
     :ivar __colormap: The mapping between message types and their colors
     """
 
-    INFO: str = "info"
-    WARNING: str = "warning"
-    ERROR: str = "error"
-    DEBUG: str = "debug"
-    FORMAT: str = "{label}: {message}"
+    INFO: "ClassVar[str]" = "info"
+    WARNING: "ClassVar[str]" = "warning"
+    ERROR: "ClassVar[str]" = "error"
+    DEBUG: "ClassVar[str]" = "debug"
+    FORMAT: "ClassVar[str]" = "{label}: {message}"
 
     __colormap: "dict[str, ColorFuncType]"
 
