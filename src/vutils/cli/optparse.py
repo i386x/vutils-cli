@@ -95,6 +95,20 @@ class Option:
         """
         return cast(bool, self.spec.get(REQUIRED_KW, False))
 
+    def assert_not_keyval(self, value: str, alias: "str | None") -> None:
+        """
+        Assert that this option is not used as a key-value option.
+
+        :param value: The option value (if any)
+        :param alias: The short option name that invoked the action (if any)
+        :raises ~vutils.cli.errors.OptParseError: when this option is used as a
+            key-value option
+        """
+        if not alias and value:
+            raise OptParseError(
+                f"Option --{self.name} is not a key-value option"
+            )
+
     def __call__(
         self, state: "State", value: str, alias: "str | None" = None
     ) -> "str | None":
@@ -362,7 +376,7 @@ class OptionSet(OptionParser):
         while state.argv:
             arg: str = state.argv.pop(0)
             if arg == "--":
-                break
+                return
             if arg.startswith("--"):
                 nameval: "list[str]" = arg[2:].split("=", 1)
                 name: str = nameval[0]

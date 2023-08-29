@@ -27,25 +27,34 @@ Test :mod:`vutils.cli.optparse` module.
    :meth:`PosArg.parse <vutils.cli.optparse.PosArg.parse>`
 .. |CommandMixin.set_optval| replace::
    :meth:`CommandMixin.set_optval <vutils.cli.command.CommandMixin.set_optval>`
+.. |OptionSet| replace:: :class:`~vutils.cli.optparse.OptionSet`
+.. |OptionSet.parse| replace::
+   :meth:`OptionSet.parse <vutils.cli.optparse.OptionSet.parse>`
+.. |build_parser| replace:: :func:`~vutils.cli.optparse.build_parser`
 """
 
 import unittest.mock
 
 from vutils.testing.mock import make_mock
 from vutils.testing.testcase import TestCase
-from vutils.testing.utils import AssertRaises
 
-from vutils.cli.errors import OptParseError
+from vutils.cli.errors import OptParseError, UnknownOptionError
+from vutils.cli.options import ConstOption
 from vutils.cli.optparse import (
-    build_parser,
     Option,
     OptionParser,
     PosArg,
     PositionalOption,
     State,
+    build_parser,
 )
 
-from .utils import make_command_mock, make_state_mock
+from .utils import (
+    ParseAndVerifyMixin,
+    make_command_mock,
+    make_state_mock,
+    unknown_option_msg,
+)
 
 
 class OptionTestCase(TestCase):
@@ -200,10 +209,22 @@ class OptionParserTestCase(TestCase):
         self.assert_called_with(command.set_opts_defaults, first)
 
 
-class PosArgTestCase(TestCase):
-    """Test case for |PosArg|."""
+class PosArgTestCase(TestCase, ParseAndVerifyMixin):
+    """
+    Test case for |PosArg|.
 
-    __slots__ = ()
+    :ivar spec: The template from which the option parser is build
+
+    :attr:`spec` is a list of pairs ``(NAME, required)``, where ``NAME`` is the
+    name of the argument and ``required`` is either :obj:`True` or
+    :obj:`False`, depending on whether the argument is required or not.
+    """
+
+    __slots__ = ("spec",)
+
+    def setUp(self):
+        """Set up the test."""
+        self.spec = [("FOO", False), ("BAR", True)]
 
     def test_initialization(self):
         """Test that |PosArg| is properly initialized."""
@@ -213,63 +234,12 @@ class PosArgTestCase(TestCase):
         self.assertIsNone(parser.next)
         self.assertIs(parser.action, option)
 
-    def test_parse(self):
-        """Test |PosArg.parse|."""
-        spec = [("FOO", False), ("BAR", True)]
-
-        self.parse_and_verify(spec, [], raises=OptParseError, mock_calls=[])
-        self.parse_and_verify(
-            spec,
-            ["cmd"],
-            raises=OptParseError,
-            mock_calls=[unittest.mock.call(spec[0][0].lower(), "cmd")],
-        )
-        self.parse_and_verify(
-            spec, ["--cmd"], raises=OptParseError, mock_calls=[],
-        )
-        self.parse_and_verify(
-            spec,
-            ["cmd", "subcmd"],
-            mock_calls=[
-                unittest.mock.call(spec[0][0].lower(), "cmd"),
-                unittest.mock.call(spec[1][0].lower(), "subcmd"),
-            ],
-        )
-        self.parse_and_verify(
-            spec, ["--cmd", "subcmd"], raises=OptParseError, mock_calls=[],
-        )
-        self.parse_and_verify(
-            spec,
-            ["cmd", "--subcmd"],
-            raises=OptParseError,
-            mock_calls=[unittest.mock.call(spec[0][0].lower(), "cmd")],
-        )
-        self.parse_and_verify(
-            spec, ["--cmd", "--subcmd"], raises=OptParseError, mock_calls=[],
-        )
-
-    def parse_and_verify(self, spec, args, **result):
+    def build_parser(self):
         """
-        Run |PosArg.parse| and verify the result.
+        Build an option parser.
 
-        :param spec: The parser specification
-        :param args: The list of arguments to be parsed
-        :param result: Key-value arguments characterizing the expected result
-
-        :arg:`spec` is a list of pairs ``(NAME, required)``, where ``NAME`` is
-        the name of the argument and ``required`` is either :obj:`True` or
-        :obj:`False`, depending on whether the argument is required or not.
-
-        :arg:`result` supports following keys:
-
-        * ``raises`` is an exception that is expected to be raised, otherwise
-          it is :obj:`None`.
-        * ``mock_calls`` is a list of expected calls to
-          |CommandMixin.set_optval|.
+        :return: the option parser
         """
-        raises = result.get("raises")
-        mock_calls = result.get("mock_calls", [])
-
         spec = [
             PositionalOption(
                 x[0].upper(),
@@ -277,17 +247,166 @@ class PosArgTestCase(TestCase):
                 keyname=x[0].lower(),
                 required=x[1],
             )
-            for x in spec
+            for x in self.spec
         ]
-        parser = build_parser(spec)
+        return build_parser(spec)
 
+    def test_parse(self):
+        """Test |PosArg.parse|."""
+        spec = self.spec
+
+        self.parse_and_verify([], raises=OptParseError, mock_calls=[])
+        self.parse_and_verify(
+            ["cmd"],
+            raises=OptParseError,
+            mock_calls=[unittest.mock.call(spec[0][0].lower(), "cmd")],
+        )
+        self.parse_and_verify(["--cmd"], raises=OptParseError, mock_calls=[])
+        self.parse_and_verify(
+            ["cmd", "subcmd"],
+            mock_calls=[
+                unittest.mock.call(spec[0][0].lower(), "cmd"),
+                unittest.mock.call(spec[1][0].lower(), "subcmd"),
+            ],
+        )
+        self.parse_and_verify(
+            ["--cmd", "subcmd"],
+            raises=OptParseError,
+            mock_calls=[],
+        )
+        self.parse_and_verify(
+            ["cmd", "--subcmd"],
+            raises=OptParseError,
+            mock_calls=[unittest.mock.call(spec[0][0].lower(), "cmd")],
+        )
+        self.parse_and_verify(
+            ["--cmd", "--subcmd"],
+            raises=OptParseError,
+            mock_calls=[],
+        )
+
+
+class OptionSetTestCase(TestCase, ParseAndVerifyMixin):
+    """
+    Test case for |OptionSet|.
+
+    :ivar speca: The template from which the option parser is build
+    :ivar specb: The template from which the option parser is build
+
+    Both :attr:`speca` and :attr:`specb` are lists of pairs where a pair
+    consists of a tuple of positional arguments and a dictionary of key-value
+    arguments accepted by :meth:`ConstOption.__init__
+    <vutils.cli.options.ConstOption.__init__>`.
+    """
+
+    __slots__ = ("speca", "specb")
+
+    def setUp(self):
+        """Set up the test."""
+        self.speca = [
+            (("opta", "a", "help a"), {"value": "a"}),
+            (("optb", "", "help b"), {"value": "b", "default": "B"}),
+            (("optc", "cx", "help c"), {"value": "c", "default": "C"}),
+        ]
+        self.specb = [
+            (("optd", "", "help d"), {"value": "d"}),
+            (("opte", "e", "help e"), {"value": "e", "default": "E"}),
+        ]
+
+    def build_parser(self):
+        """
+        Build an option parser.
+
+        :return: the option parser
+        """
+        parser = build_parser([ConstOption(*x, **y) for x, y in self.specb])
+        return build_parser(
+            [ConstOption(*x, **y) for x, y in self.speca],
+            parser,
+            PositionalOption("ARG", "arg", keyname="arg"),
+        )
+
+    def test_parse(self):
+        """Test |OptionSet.parse|."""
+        self.parse_and_verify([], tail=[])
+        self.parse_and_verify(["--"], tail=[])
+        self.parse_and_verify(["--", "foo", "-bar"], tail=["foo", "-bar"])
+        self.parse_and_verify(
+            ["--optb", "-cxe", "--optd", "extra"],
+            tail=[],
+            mock_calls=[
+                unittest.mock.call("optb", "b"),
+                unittest.mock.call("optc", "c"),
+                unittest.mock.call("optc", "c"),
+                unittest.mock.call("opte", "e"),
+                unittest.mock.call("optd", "d"),
+                unittest.mock.call("arg", "extra"),
+            ],
+        )
+        self.parse_and_verify(
+            ["--foo"],
+            raises=UnknownOptionError,
+            excstr=unknown_option_msg("--foo"),
+            tail=[],
+            mock_calls=[],
+        )
+        self.parse_and_verify(
+            ["-axzc"],
+            raises=UnknownOptionError,
+            excstr=unknown_option_msg("-z"),
+            tail=[],
+            mock_calls=[
+                unittest.mock.call("opta", "a"),
+                unittest.mock.call("optc", "c"),
+            ],
+        )
+
+
+class BuildParserTestCase(TestCase):
+    """Test case for |build_parser|."""
+
+    __slots__ = ()
+
+    def test_build_parser(self):
+        """Test |build_parser|."""
+        parser = build_parser(
+            ConstOption("name", "n", "set name", value="John"),
+            ConstOption("surname", "s", "set surname", value="Doe"),
+            PositionalOption("CLASS", "set class", keyname="cls"),
+            PositionalOption("SUBCLASS", "set subclass", keyname="subcls"),
+            ConstOption("host", "h", "set host", value="localhost"),
+            ConstOption("port", "p", "set port", value=8765),
+            PositionalOption("CMD", "command", keyname="cmd"),
+        )
         command = make_command_mock()
-        state = State(command, args)
+        state = State(command, ["-s", "-n", "A", "B", "-p", "-h", "C"])
+        parser.parse(state)
+        self.assertEqual(
+            command.set_optval.mock_calls,
+            [
+                unittest.mock.call("surname", "Doe"),
+                unittest.mock.call("name", "John"),
+                unittest.mock.call("cls", "A"),
+                unittest.mock.call("subcls", "B"),
+                unittest.mock.call("port", 8765),
+                unittest.mock.call("host", "localhost"),
+                unittest.mock.call("cmd", "C"),
+            ],
+        )
 
-        parse = parser.parse
-        if raises:
-            parse = AssertRaises(self, parse, raises)
-
-        parse(state)
-        self.assert_called_with(command.set_opts_defaults, parser)
-        self.assertEqual(command.set_optval.mock_calls, mock_calls)
+        parser = build_parser(
+            PositionalOption("CMD", "command", keyname="cmd"),
+            ConstOption("host", "h", "set host", value="localhost"),
+            ConstOption("port", "p", "set port", value=8765),
+        )
+        command = make_command_mock()
+        state = State(command, ["hello", "-hp"])
+        parser.parse(state)
+        self.assertEqual(
+            command.set_optval.mock_calls,
+            [
+                unittest.mock.call("cmd", "hello"),
+                unittest.mock.call("host", "localhost"),
+                unittest.mock.call("port", 8765),
+            ],
+        )

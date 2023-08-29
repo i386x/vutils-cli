@@ -63,7 +63,7 @@ class CommandMixin(ApplicationMixin):
         """
         Initialize the mixin.
 
-        :param parent: The parent command
+        :param parent: The parent of the command
         """
         ApplicationMixin.__init__(self)
         self.parent = parent

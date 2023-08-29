@@ -34,16 +34,42 @@ Unit tests utilities.
    <vutils.cli.application.ApplicationMixin.exit>`
 .. |ApplicationMixin.error| replace:: :meth:`ApplicationMixin.error
    <vutils.cli.application.ApplicationMixin.error>`
+.. |CommandMixin| replace:: :class:`~vutils.cli.optparse.CommandMixin`
+.. |State| replace:: :class:`~vutils.cli.optparse.State`
+.. |OptionParser.parse| replace::
+   :meth:`OptionParser.parse <vutils.cli.optparse.OptionParser.parse>`
+.. |CommandMixin.set_optval| replace::
+   :meth:`CommandMixin.set_optval <vutils.cli.command.CommandMixin.set_optval>`
+.. |Option| replace:: :class:`~vutils.cli.optparse.Option`
+.. |CommandMixin.get_optval| replace::
+   :meth:`CommandMixin.get_optval <vutils.cli.command.CommandMixin.get_optval>`
+.. |CommandMixin.print_help| replace::
+   :meth:`CommandMixin.print_help <vutils.cli.command.CommandMixin.print_help>`
+.. |CommandMixin.print_version| replace::
+   :meth:`CommandMixin.print_version
+   <vutils.cli.command.CommandMixin.print_version>`
+.. |CommandMixin.exit| replace::
+   :meth:`CommandMixin.exit <vutils.cli.command.CommandMixin.exit>`
 """
 
 import unittest.mock
 
-from vutils.testing.mock import PatcherFactory, make_mock
+from vutils.testing.mock import PatcherFactory, make_callable, make_mock
+from vutils.testing.utils import AssertRaises
 
 from vutils.cli.application import ApplicationMixin
+from vutils.cli.command import CommandMixin
 from vutils.cli.errors import ApplicationError
-from vutils.cli.io import StreamsProxyMixin
-from vutils.cli.logging import LoggerMixin
+from vutils.cli.io import StreamsProxyMixin, nocolor
+from vutils.cli.logging import LogFormatter, LoggerMixin
+from vutils.cli.options import (
+    HelpOption,
+    VersionOption,
+    flag,
+    keyval,
+    subcommand,
+)
+from vutils.cli.optparse import State, build_parser
 
 LOGFILE = "log.txt"
 ERR_TEST = 2
@@ -88,6 +114,59 @@ def on_error_log(exc):
     :return: the log item
     """
     return (f"Exception caught: {exc}\n",)
+
+
+def not_kv_option_msg(option):
+    """
+    Make a message about option not being a key-value option.
+
+    :param option: The option
+    :return: the message
+    """
+    return f"Option {option} is not a key-value option"
+
+
+def value_required_msg(option):
+    """
+    Make a message about option requiring a value.
+
+    :param option:
+    :return: the message
+    """
+    return f"Option {option} requires a value"
+
+
+def unknown_option_msg(option):
+    """
+    Make a message about unknown option.
+
+    :param option: The option
+    :return: the message
+    """
+    return f"Unknown option '{option}'"
+
+
+def unknown_option_log(option):
+    """
+    Make a log message issued by unknown option check.
+
+    :param option: The option
+    :return: the log message
+    """
+    return (
+        "ERROR: Exception caught: UnknownOptionError"
+        f'(reason="{unknown_option_msg(option)}")\n'
+    )
+
+
+def unknown_command_log(command):
+    """
+    Make a log message issued by unknown command check.
+
+    :param command: The command name
+    :return: the log message
+    """
+    return f'ERROR: Exception caught: UnknownCommandError(name="{command}")\n'
 
 
 class ModulePatcher(PatcherFactory):
@@ -306,3 +385,320 @@ class ApplicationA(ApplicationMixin, LoggerA):
             raise ErrorB()
 
         return cls.EXIT_FAILURE
+
+
+def make_command_mock():
+    """
+    Make a mock of |CommandMixin|.
+
+    :return: the mock object that mocks |CommandMixin|
+    """
+    slots = [
+        "set_optval",
+        "set_opts_defaults",
+        "get_optval",
+        "print_help",
+        "print_version",
+        "exit",
+    ]
+    mock = make_mock(slots)
+    type(mock).EXIT_SUCCESS = 0
+    mock.get_optval = make_callable(0)
+    return mock
+
+
+def make_state_mock():
+    """
+    Make a mock of |State|.
+
+    :return: the mock object that mocks |State|
+    """
+    state = make_mock()
+    state.cmd = make_command_mock()
+    return state
+
+
+class ParseAndVerifyMixin:
+    """Extend class about :meth:`~.ParseAndVerifyMixin.parse_and_verify`."""
+
+    __slots__ = ()
+
+    def build_parser(self):
+        """
+        Build an option parser.
+
+        :return: the option parser
+        """
+        raise NotImplementedError()
+
+    def parse_and_verify(self, args, **result):
+        """
+        Run |OptionParse.parse| and verify the result.
+
+        :param args: The list of arguments to be parsed
+        :param result: Key-value arguments characterizing the expected result
+
+        :arg:`result` supports following keys:
+
+        * ``tail`` is an expected list of unprocessed arguments. If it is
+          :obj:`None` (default), unprocessed arguments are not verified.
+        * ``raises`` is an exception that is expected to be raised, otherwise
+          it is :obj:`None`.
+        * ``excstr`` is an expected value returned by :class:`str` when applied
+          on caught exception. If it is :obj:`None` (default), the value is
+          ignored.
+        * ``mock_calls`` is a list of expected calls to
+          |CommandMixin.set_optval|.
+        """
+        tail = result.get("tail")
+        raises = result.get("raises")
+        excstr = result.get("excstr")
+        mock_calls = result.get("mock_calls", [])
+
+        parser = self.build_parser()
+        command = make_command_mock()
+        state = State(command, args)
+
+        parse = parser.parse
+        if raises:
+            parse = AssertRaises(self, parse, raises)
+
+        parse(state)
+        if raises and excstr:
+            self.assertEqual(str(parse.get_exception()), excstr)
+        if tail is not None:
+            self.assertEqual(state.argv, tail)
+        self.assert_called_with(command.set_opts_defaults, parser)
+        self.assertEqual(command.set_optval.mock_calls, mock_calls)
+
+
+class OptionTesterMixin:
+    """Mixin for testing |Option| subclasses."""
+
+    __slots__ = ()
+
+    def run_and_verify(self, *args, **kwargs):
+        """
+        Build a parser, run it, and verify result.
+
+        :param args: Positional arguments to the |Option| subclass
+        :param kwargs: Key-value arguments
+
+        Key-value arguments are also passed to the |Option| subclass, except
+        these:
+
+        * ``option`` (an |Option| subclass instance builder)
+        * ``argv`` (a list of arguments to be parsed)
+        * ``raises`` (an expected exception to be raised)
+        * ``excstr`` (an expected :class:`str` value of caught exception)
+        * ``set_optval_calls`` (a list of expected calls to
+          |CommandMixin.set_optval|)
+        * ``get_optval_calls`` (a list of expected calls to
+          |CommandMixin.get_optval|)
+        * ``print_help_calls`` (a list of expected calls to
+          |CommandMixin.print_help|)
+        * ``print_version_calls`` (a list of expected calls to
+          |CommandMixin.print_version|)
+        * ``exit_calls`` (a list of expected calls to |CommandMixin.exit|)
+        """
+        option = kwargs.pop("option")
+        argv = kwargs.pop("argv", [])
+        raises = kwargs.pop("raises", None)
+        excstr = kwargs.pop("excstr", None)
+        meths = (
+            "set_optval",
+            "get_optval",
+            "print_help",
+            "print_version",
+            "exit",
+        )
+        calls = {meth: kwargs.pop(f"{meth}_calls", []) for meth in meths}
+
+        parser = build_parser(option(*args, **kwargs))
+        command = make_command_mock()
+        state = State(command, argv)
+
+        parse = parser.parse
+        if raises:
+            parse = AssertRaises(self, parse, raises)
+
+        parse(state)
+        if raises and excstr:
+            self.assertEqual(str(parse.get_exception()), excstr)
+        for meth in meths:
+            self.assertEqual(getattr(command, meth).mock_calls, calls[meth])
+
+
+class SampleCommandBase(CommandMixin, LoggerMixin, StreamsProxyMixin):
+    """Sample command base class."""
+
+    __slots__ = ()
+
+    def __init__(self, parent=None, stream=None):
+        """
+        Initialize the sample command base.
+
+        :param parent: The parent of the command
+        :param stream: The stream log messages are written to
+        """
+        CommandMixin.__init__(self, parent)
+        LoggerMixin.__init__(self)
+        StreamsProxyMixin.__init__(self)
+        self.set_log_style(LogFormatter.INFO, nocolor)
+        self.set_log_style(LogFormatter.ERROR, nocolor)
+        self.set_streams(stream, stream)
+
+    def initialize(self):
+        """Perform delayed initialization actions."""
+        self.linfo("initializing application")
+        CommandMixin.initialize(self)
+
+    def print_help(self):
+        """Print help."""
+        self.linfo("application help")
+        CommandMixin.print_help(self)
+
+    def print_version(self):
+        """Print version."""
+        self.linfo("application version")
+        CommandMixin.print_version(self)
+
+    def print_options(self, options):
+        """
+        Print the given options.
+
+        :param options: The list of options
+        """
+        for name in options:
+            self.linfo(f"{name}: {self.get_optval(name)}")
+
+    def main(self, argv):
+        """
+        Provide the command entry point.
+
+        :param argv: The list of arguments
+        :return: the exit code
+        """
+        self.linfo(f"unprocessed arguments: {argv!r}")
+        return CommandMixin.main(self, argv)
+
+
+def common_options():
+    """
+    Build help and version options.
+
+    :return: the tuple with help and version options
+    """
+    return (HelpOption(), VersionOption())
+
+
+class SampleApplication(SampleCommandBase):
+    """
+    Sample application.
+
+    :ivar __stream: The stream log messages are written to
+    """
+
+    OPTSPEC = (
+        common_options(),
+        keyval("input", "i", "input file"),
+        keyval("output", "o", "output file", default="a.out"),
+        subcommand("COMMAND", "a command"),
+    )
+
+    __slots__ = ("__stream",)
+
+    def __init__(self, stream):
+        """
+        Initialize the application.
+
+        :param stream: The stream log messages are written to
+        """
+        self.__stream = stream
+        SampleCommandBase.__init__(self, stream=stream)
+
+    def load_subcommand(self, name):
+        """
+        Load a subcommand.
+
+        :param name: The name of a subcommand
+        """
+        if name == "one":
+            return OneCmd(self, self.__stream)
+        if name == "two":
+            return TwoCmd(self, self.__stream)
+        return SampleCommandBase.load_subcommand(self, name)
+
+    def main(self, argv):
+        """
+        Provide the application entry point.
+
+        :param argv: The list of arguments
+        :return: the exit code
+        """
+        self.print_options(["help", "version", "input", "output"])
+        return SampleCommandBase.main(self, argv)
+
+
+class OneCmd(SampleCommandBase):
+    """Command ``one``."""
+
+    OPTSPEC = (
+        common_options(),
+        flag("tty", "t", "allocate pseudo-terminal"),
+        flag("yes", "y", "assume yes to all questions"),
+    )
+
+    __slots__ = ()
+
+    def __init__(self, parent, stream):
+        """
+        Initialize the command.
+
+        :param parent: The parent of the command
+        :param stream: The stream log messages are written to
+        """
+        SampleCommandBase.__init__(self, parent, stream)
+
+    def main(self, argv):
+        """
+        Provide the command entry point.
+
+        :param argv: The list of arguments
+        :return: the exit code
+        """
+        self.print_options(
+            ["help", "version", "input", "output", "tty", "yes"],
+        )
+        return SampleCommandBase.main(self, argv)
+
+
+class TwoCmd(SampleCommandBase):
+    """Command ``two``."""
+
+    OPTSPEC = (
+        common_options(),
+        keyval("name", "n", "a name of a subject"),
+        flag("quiet", "q", "do not print anything"),
+    )
+
+    __slots__ = ()
+
+    def __init__(self, parent, stream):
+        """
+        Initialize the command.
+
+        :param parent: The parent of the command
+        :param stream: The stream log messages are written to
+        """
+        SampleCommandBase.__init__(self, parent, stream)
+
+    def main(self, argv):
+        """
+        Provide the command entry point.
+
+        :param argv: The list of arguments
+        :return: the exit code
+        """
+        self.print_options(["help", "version", "name", "quiet"])
+        return SampleCommandBase.main(self, argv)

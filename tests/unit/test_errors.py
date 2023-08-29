@@ -11,11 +11,21 @@ Test :mod:`vutils.cli.errors` module.
 
 .. |ApplicationError| replace:: :exc:`~vutils.cli.errors.ApplicationError`
 .. |AppExitError| replace:: :exc:`~vutils.cli.errors.AppExitError`
+.. |UnknownCommandError| replace::
+   :exc:`~vutils.cli.errors.UnknownCommandError`
+.. |OptParseError| replace:: :exc:`~vutils.cli.errors.OptParseError`
+.. |UnknownOptionError| replace:: :exc:`~vutils.cli.errors.UnknownOptionError`
 """
 
 from vutils.testing.testcase import TestCase
 
-from vutils.cli.errors import AppExitError, ApplicationError
+from vutils.cli.errors import (
+    AppExitError,
+    ApplicationError,
+    OptParseError,
+    UnknownCommandError,
+    UnknownOptionError,
+)
 
 
 class ApplicationErrorTestCase(TestCase):
@@ -59,3 +69,62 @@ class AppExitErrorTestCase(TestCase):
 
         self.assertEqual(exception.ecode, value)
         self.assertEqual(f"{exception}", f"AppExitError(exit_code={value})")
+
+
+class UnknownCommandErrorTestCase(TestCase):
+    """Test case for |UnknownCommandError|."""
+
+    __slots__ = ()
+
+    def test_unknown_command_error(self):
+        """Test the |UnknownCommandError| basic usage."""
+        name = "foo"
+
+        with self.assertRaises(UnknownCommandError) as context_manager:
+            raise UnknownCommandError(name)
+        exception = context_manager.exception
+
+        self.assertEqual(exception.name, name)
+        self.assertEqual(
+            repr(exception),
+            f'UnknownCommandError(name="{name}")',
+        )
+        self.assertEqual(str(exception), f"Unknown (sub)command: {name}")
+
+
+class OptParseErrorTestCase(TestCase):
+    """Test case for |OptParseError|."""
+
+    __slots__ = ()
+
+    def test_opt_parse_error(self):
+        """Test the |OptParseError| basic usage."""
+        reason = "Bad option `--foo'"
+
+        with self.assertRaises(OptParseError) as context_manager:
+            raise OptParseError(reason)
+        exception = context_manager.exception
+
+        self.assertEqual(exception.reason, reason)
+        self.assertEqual(repr(exception), f'OptParseError(reason="{reason}")')
+        self.assertEqual(f"{exception}", reason)
+
+
+class UnknownOptionErrorTestCase(TestCase):
+    """Test case for |UnknownOptionError|."""
+
+    __slots__ = ()
+
+    def test_unknown_option_error(self):
+        """Test the |UnknownOptionError| basic usage."""
+        name = "--foo"
+
+        with self.assertRaises(UnknownOptionError) as context_manager:
+            raise UnknownOptionError(name)
+        exception = context_manager.exception
+
+        self.assertEqual(
+            repr(exception),
+            f"UnknownOptionError(reason=\"Unknown option '{name}'\")",
+        )
+        self.assertEqual(f"{exception}", f"Unknown option '{name}'")

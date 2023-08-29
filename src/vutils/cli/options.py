@@ -67,7 +67,10 @@ class ConstOption(Option):
         :param alias: The short option name that invoked this action (if any)
         :return: unprocessed shorts or :obj:`None` signaling the return value
             should be ignored
+        :raises ~vutils.cli.errors.OptParseError: when the option is used as a
+            key-value option
         """
+        self.assert_not_keyval(value, alias)
         state.cmd.set_optval(self.keyname, self.spec.get(VALUE_KW, True))
         if alias:
             return value
@@ -141,7 +144,10 @@ class CountOption(Option):
         :param alias: The short option name that invoked this action (if any)
         :return: unprocessed shorts or :obj:`None` signaling the return value
             should be ignored
+        :raises ~vutils.cli.errors.OptParseError: when the option is used as a
+            key-value option
         """
+        self.assert_not_keyval(value, alias)
         optval: int = cast(int, state.cmd.get_optval(self.name, 0))
         state.cmd.set_optval(self.name, optval + 1)
         if alias:
