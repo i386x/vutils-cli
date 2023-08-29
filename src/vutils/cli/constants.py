@@ -14,6 +14,7 @@ String and other constants.
     stored
 :const DEFAULT_KW: The ``default`` keyword
 :const INVERSE_KW: The ``inverse`` keyword
+:const REQUIRED_KW: The ``required`` keyword
 :const KEYNAME_KW: The ``keyname`` keyword
 :const VALUE_KW: The ``value`` keyword
 """
@@ -23,4 +24,5 @@ SUBCOMMAND_SLOT: str = "COMMAND"
 DEFAULT_KW: str = "default"
 INVERSE_KW: str = "inverse"
 KEYNAME_KW: str = "keyname"
+REQUIRED_KW: str = "required"
 VALUE_KW: str = "value"

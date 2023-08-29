@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING, cast
 
 from vutils.python.objects import flatten
 
-from vutils.cli.constants import DEFAULT_KW, KEYNAME_KW
-from vutils.cli.errors import UnknownOptionError
+from vutils.cli.constants import DEFAULT_KW, KEYNAME_KW, REQUIRED_KW
+from vutils.cli.errors import OptParseError, UnknownOptionError
 
 if TYPE_CHECKING:
     from vutils.cli import CommandProtocol, OptSpecType
@@ -59,13 +59,15 @@ class Option:
         it when a help screen is shown.
 
         :arg:`spec` contains additional parameters associated with the option.
-        There are two basic parameters supported:
+        There are three basic parameters supported:
 
         * ``keyname``, which specify the name under which the option's value is
           accessible to application. The default value of ``keyname`` is
           :arg:`name`.
         * ``default``, which specify the default value of the option. The
           default value of ``default`` is :obj:`None`.
+        * ``required``, which specify whether the option is required or not.
+          The default is :obj:`False`.
 
         Another :arg:`spec` parameters can be specified by a user.
         """
@@ -84,6 +86,14 @@ class Option:
         :obj:`None` means the option has no default value.
         """
         return self.spec.get(DEFAULT_KW, None)
+
+    def required(self) -> bool:
+        """
+        Tell whether the option is required of not.
+
+        :return: :obj:`True` if the option is required
+        """
+        return cast(bool, self.spec.get(REQUIRED_KW, False))
 
     def __call__(
         self, state: "State", value: str, alias: "str | None" = None
@@ -152,7 +162,7 @@ class PositionalOption(Option):
         :return: unprocessed shorts or :obj:`None` signaling the return value
             should be ignored
         """
-        state.cmd.set_optval(self.name, value)
+        state.cmd.set_optval(self.keyname, value)
 
 
 class State:
@@ -278,6 +288,10 @@ class PosArg(OptionParser):
 
         if state.argv and not state.argv[0].startswith("-"):
             self.action(state, state.argv.pop(0))
+        elif self.action.required():
+            raise OptParseError(
+                f"Positional option '{self.action.name}' is required"
+            )
 
         if self.next:
             self.next.parse(state)
