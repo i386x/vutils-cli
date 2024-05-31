@@ -1,5 +1,5 @@
 #
-# File:    ./src/vutils/cli/errors.py
+# File:    ./src/vutils/cli/base/errors.py
 # Author:  Jiří Kučera <sanczes AT gmail.com>
 # Date:    2021-07-09 22:37:01 +0200
 # Project: vutils-cli: Auxiliary library for writing CLI applications
@@ -10,32 +10,37 @@
 
 from typing import TYPE_CHECKING
 
+from vutils.cli.base.constants import EXIT_FAILURE
+
 if TYPE_CHECKING:
-    from typing import ClassVar
+    from vutils.cli.base.command import Command
 
 
 class ApplicationError(Exception):
-    """
-    Base class for all application errors.
+    """Base class of all application errors."""
 
-    :cvar DETAIL: The detail about the error
-    """
+    #: The detail about the error
+    detail: str
 
-    DETAIL: "ClassVar[str]" = ""
-
-    __slots__ = ()
+    __slots__ = ("detail",)
 
     def __init__(self) -> None:
         """Initialize the error object."""
         Exception.__init__(self)
+        self.detail = ""
 
-    def detail(self) -> str:
+    def handle(self, command: "Command") -> int:
         """
-        Get the error detail.
+        Handle this exception.
 
-        :return: the error detail
+        :param command: The command that caught this exception
+        :return: the suggested exit code
+
+        Log the details about this exception and return
+        :const:`~vutils.cli.base.constants.EXIT_FAILURE`.
         """
-        return type(self).DETAIL
+        command.context.logger.error(f"Exception caught: {self!r}\n")
+        return EXIT_FAILURE
 
     def __repr__(self) -> str:
         """
@@ -43,7 +48,7 @@ class ApplicationError(Exception):
 
         :return: the error representation
         """
-        return f"{type(self).__name__}({self.detail()})"
+        return f"{type(self).__name__}({self.detail})"
 
     def __str__(self) -> str:
         """
@@ -55,12 +60,9 @@ class ApplicationError(Exception):
 
 
 class AppExitError(ApplicationError):
-    """
-    Used to signal the exit.
+    """Used to signal the exit."""
 
-    :ivar ecode: The exit code
-    """
-
+    #: The exit code
     ecode: int
 
     __slots__ = ("ecode",)
@@ -73,23 +75,13 @@ class AppExitError(ApplicationError):
         """
         ApplicationError.__init__(self)
         self.ecode = ecode
-
-    def detail(self) -> str:
-        """
-        Get the error detail.
-
-        :return: the error detail
-        """
-        return f"exit_code={self.ecode}"
+        self.detail = f"exit_code={self.ecode}"
 
 
 class UnknownCommandError(ApplicationError):
-    """
-    Raised when a command given on CLI is not known.
+    """Raised when a command given on CLI is not known."""
 
-    :ivar name: The command name
-    """
-
+    #: The command name
     name: str
 
     __slots__ = ("name",)
@@ -102,14 +94,7 @@ class UnknownCommandError(ApplicationError):
         """
         ApplicationError.__init__(self)
         self.name = name
-
-    def detail(self) -> str:
-        """
-        Get the error detail.
-
-        :return: the error detail
-        """
-        return f'name="{self.name}"'
+        self.detail = f'name="{self.name}"'
 
     def __str__(self) -> str:
         """
@@ -121,12 +106,9 @@ class UnknownCommandError(ApplicationError):
 
 
 class OptParseError(ApplicationError):
-    """
-    Raised when option parsing goes wrong.
+    """Raised when option parsing goes wrong."""
 
-    :ivar reason: The reason of error
-    """
-
+    #: The reason of an error
     reason: str
 
     __slots__ = ("reason",)
@@ -135,18 +117,11 @@ class OptParseError(ApplicationError):
         """
         Initialize the error object.
 
-        :param reason: The reason of error
+        :param reason: The reason of this error
         """
         ApplicationError.__init__(self)
         self.reason = reason
-
-    def detail(self) -> str:
-        """
-        Get the error detail.
-
-        :return: the error detail
-        """
-        return f'reason="{self.reason}"'
+        self.detail = f'reason="{self.reason}"'
 
     def __str__(self) -> str:
         """

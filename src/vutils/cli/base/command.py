@@ -1,11 +1,164 @@
 #
-# File:    ./src/vutils/cli/command.py
+# File:    ./src/vutils/cli/base/command.py
 # Author:  Jiří Kučera <sanczes AT gmail.com>
 # Date:    2023-01-09 18:13:53 +0100
 # Project: vutils-cli: Auxiliary library for writing CLI applications
 #
 # SPDX-License-Identifier: MIT
 #
+"""
+Base class for CLI command.
+"""
+
+EXIT_SUCCESS = 0
+EXIT_FAILURE = 1
+
+
+class ContextProxy:
+    """"""
+
+    context: "Context"
+
+    __slots__ = ("context",)
+
+    def __init__(self, context):
+        """"""
+        self.context = context
+
+    def echo(self, message, error=False, nl=True, color=None):
+        """"""
+        config = self.context.get_config()
+        streams = self.context.get_streams()
+        stream = streams.get_error() if error else streams.get_output()
+        if color is not None:
+            color_factory = self.context.get_color_factory()
+            color = config.trygetval(COLORMAP_KEY.format(name=color), color)
+            message = (
+                f"{color_factory.color(color)}"
+                f"{message}"
+                f"{color_factory.reset_all()}"
+            )
+        if not has_colors(stream, config.getval(COLOR_KEY)):
+            message = strip_colors(message)
+        if nl:
+            message += "\n"
+        stream.write(message)
+
+    def exit(self, ecode=EXIT_SUCCESS):
+        """"""
+        raise CommandExitError(ecode)
+
+    def die(self, message, ecode=EXIT_FAILURE):
+        """"""
+        logger = self.context.get_logger()
+        logger.error("%s", message)
+        self.exit(ecode)
+
+
+class ArgumentProcessor(ContextProxy):
+    """Provide arguments processing logic for a command."""
+
+    PROPERTIES = {}
+
+    __slots__ = ()
+
+    def __init__(self):
+        """"""
+
+    def print_help(self):
+        """"""
+
+    def print_version(self):
+        """"""
+        name = get_command_name(self)
+        version = get_package_version(self)
+
+        ctx = self.get_context()
+        ctx.echo(f"{name} {version}")
+
+    def parse_args(self, argv):
+        """"""
+        state = create_parser_state(self, argv)
+        create_parser(self).parse(state)
+        return state.options
+
+    def load_subcommand(self, name):
+        """"""
+        raise UnknownCommandError(name)
+
+    def get_subcommand(self, options):
+        """"""
+        name = options.subcommand
+        if name is None:
+            return None
+        return self.load_subcommand(name)
+
+
+class Command:
+    """Base class for CLI command."""
+
+
+    CONTEXT_BUILDER = Context
+    OPTION_PARSER_STATE_BUILDER = State
+    OPTION_PARSER_BUILDER = build_parser
+    OPTION_SPEC = ()
+
+    parent: "Command | None"
+    context: "Context"
+
+    __slots__ = ("parent", "context")
+
+    def __init__(self, parent=None, context=None):
+        """"""
+        cls = type(self)
+        self.parent = parent
+        self.context = parent.context if parent else cls.CONTEXT_BUILDER()
+
+    def initialize(self):
+        """"""
+
+    def run(self, argv):
+        """"""
+        try:
+            self.initialize()
+            options = self.parse_args(argv)
+            subcommand = self.get_subcommand(options)
+            if subcommand:
+                return subcommand.run(options.unprocessed)
+            return self.main(options)
+        except ApplicationError as exc:
+            return exc.handle(self)
+        return EXIT_SUCCESS
+
+    def main(self, unused_options):
+        """"""
+        return EXIT_SUCCESS
+
+
+
+
+
+
+
+
+    def echo(self, msg, stream=OUTPUT_STREAM):
+        """"""
+        self.context.streams[stream].write(f"{msg}\n")
+
+    def exit(self, ecode=None):
+        """"""
+        raise AppExitError(
+            ecode if ecode is not None else type(self).EXIT_SUCCESS
+        )
+
+    def die(self, msg, ecode=None):
+        """"""
+        self.context.logger.error("%s", msg)
+        self.exit(ecode if ecode is not None else type(self).EXIT_FAILURE)
+
+
+
+
 """
 CLI (sub)commands support.
 
