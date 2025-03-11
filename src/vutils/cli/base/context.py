@@ -14,63 +14,47 @@ import sys
 class Factory:
     """"""
 
+    __slots__ = ()
+
     @staticmethod
     def build_config(unused_context):
         """
         """
         return Config()
 
+    @staticmethod
     def build_streams(unused_context):
         """
         """
         return Streams(sys.stdin, sys.stdout, sys.stderr)
 
+    @staticmethod
+    def build_logger(context):
+        """
+        """
+        return Logger.create(context, context.get_streams().get_error())
+
+
 class Context:
     """Application context."""
 
-    config: "BaseConfig"
-    istream: "TextIO"
-    ostream: "TextIO"
-    estream: "TextIO"
-    lstream: "LogStream"
-    logger: "Logger"
+    __progname: str
+    __config: "BaseConfig"
+    __streams: "Streams"
+    __logger: "Logger"
 
-    __slots__ = ("streams", "logger")
+    __slots__ = ("__progname", "__config", "__streams", "__logger")
 
-    @staticmethod
-    def create_config():
-        return Config()
-
-    @staticmethod
-    def create_streams(config):
-        istream = StreamProxy(sys.stdin, config)
-        ostream = StreamProxy(sys.stdout, config)
-        estream = StreamProxy(sys.stderr, config)
-        lstream = LogStream(estream, config)
-        return {
-            INPUT_STREAM: istream,
-            OUTPUT_STREAM: ostream,
-            ERROR_STREAM: estream,
-            LOG_STREAM: lstream,
-        }
-
-    @staticmethod
-    def create_logger(config, streams):
-        return LoggerAdapter.create(config, streams)
-
-    @classmethod
-    def create(cls):
+    def __init__(self, progname, factory):
         """"""
-        config = cls.create_config()
-        streams = cls.create_streams(config)
-        logger = cls.create_logger(config, streams)
-        return cls(config, streams, logger)
-
-    def __init__(self, factory):
-        """"""
+        self.__progname = progname
         self.__config = factory.build_config(self)
         self.__streams = factory.build_streams(self)
         self.__logger = factory.build_logger(self)
+
+    def get_progname(self):
+        """"""
+        return self.__progname
 
     def get_config(self):
         """"""

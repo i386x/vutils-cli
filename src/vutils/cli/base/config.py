@@ -138,7 +138,7 @@ class ConfigItemError(ConfigError):
         return joiner.join(parts)
 
 
-class InvalidSchema(ConfigItemError):
+class InvalidSchemaError(ConfigItemError):
     """Raised when a schema is not valid."""
 
     __slots__ = ()
@@ -157,7 +157,7 @@ class InvalidSchema(ConfigItemError):
         )
 
 
-class InvalidValue(ConfigItemError):
+class InvalidValueError(ConfigItemError):
     """Raised when a value is not valid."""
 
     __slots__ = ()
@@ -599,7 +599,7 @@ class Config(BaseConfig):
         self.setval(COLORMAP_KEY.format(name="fail"), "bold-red", Default())
 
         self.define_key(
-            COLORMAP_KEY.format(name="danger"),
+            COLORMAP_KEY.format(name="alert"),
             description=(
                 "The color for warning-like messages.\n"
                 "\n"
@@ -608,7 +608,7 @@ class Config(BaseConfig):
             )
         )
         self.setval(
-            COLORMAP_KEY.format(name="danger"), "bold-bright-yellow", Default()
+            COLORMAP_KEY.format(name="alert"), "bold-bright-yellow", Default()
         )
 
         self.define_key(
@@ -666,9 +666,9 @@ class Config(BaseConfig):
                 "Before use, the path is formatted using `str.format()`\n"
                 "method with these keyword arguments set:\n"
                 "  `progname` - the program name, usually the base name of\n"
-                "      `sys.argv[0]`;\n"
-                "  `today` - the current date in YYYYMMDD format;\n"
-                "  `now` - the current time in HHMMSS format.\n"
+                "      `sys.argv[0]` without extension;\n"
+                "  `today` - the current date in %Y%m%d format;\n"
+                "  `now` - the current time in %H%M%S format.\n"
                 "The path is either absolute or relative to the current\n"
                 "working directory. Missing directories are created during\n"
                 "first write operation, assuming there are enough\n"

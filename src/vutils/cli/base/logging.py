@@ -219,6 +219,16 @@ class Logger(logging.LoggerAdapter):
 
     __slots__ = ()
 
+    def log_path(context: "Context") -> str:
+        """
+        """
+        now = time.localtime()
+        return context.get_config().getval(LOG_PATH_KEY).format(
+            progname=context.get_progname(),
+            today=time.strftime("%Y%m%d", now),
+            now=time.strftime("%H%M%S", now),
+        )
+
     @classmethod
     def create(cls, config: "BaseConfig", stream: "TextIO") -> "Logger":
         """
@@ -241,7 +251,7 @@ class Logger(logging.LoggerAdapter):
         sh.setFormatter(LogRecordFormatter(config, True))
         logger.addHandler(sh)
 
-        filename = config.get_log_path()
+        filename = Logger.log_path(context)
         ensure_directory(dirname(filename))
         fh = LogFileHandler(filename)
         fh.setLevel(logging.DEBUG)

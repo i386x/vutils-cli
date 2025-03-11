@@ -38,8 +38,7 @@ class ContextProxy:
                 f"{message}"
                 f"{color_factory.reset_all()}"
             )
-        if not has_colors(stream, config.getval(COLOR_KEY)):
-            message = strip_colors(message)
+        message = maybe_strip_colors(message, stream, config.getval(COLOR_KEY))
         if nl:
             message += "\n"
         stream.write(message)
